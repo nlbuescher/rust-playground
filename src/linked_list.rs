@@ -5,21 +5,6 @@ struct Node<T> {
 	value: T,
 }
 
-pub struct Iter<'a, T: 'a> {
-	current: Option<&'a Node<T>>,
-}
-
-impl<'a, T> Iterator for Iter<'a, T> {
-	type Item = &'a T;
-
-	fn next(&mut self) -> Option<Self::Item> {
-		self.current.map(|node| {
-			self.current = node.next.as_deref();
-			&node.value
-		})
-	}
-}
-
 pub struct LinkedList<T> {
 	len: usize,
 	head: Option<Box<Node<T>>>,
@@ -174,6 +159,54 @@ impl<T> LinkedList<T> {
 
 impl<T: std::fmt::Debug> std::fmt::Debug for LinkedList<T> {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		f.debug_list().entries(self.iter()).finish()
+		f.debug_list().entries(self).finish()
+	}
+}
+
+pub struct Iter<'a, T: 'a> {
+	current: Option<&'a Node<T>>,
+}
+
+impl<'a, T> Iterator for Iter<'a, T> {
+	type Item = &'a T;
+
+	fn next(&mut self) -> Option<Self::Item> {
+		self.current.map(|node| {
+			self.current = node.next.as_deref();
+			&node.value
+		})
+	}
+}
+
+pub struct IntoIter<T> {
+	current: Option<Box<Node<T>>>,
+}
+
+impl<T> Iterator for IntoIter<T> {
+	type Item = T;
+
+	fn next(&mut self) -> Option<Self::Item> {
+		self.current.take().map(|node| {
+			self.current = node.next;
+			node.value
+		})
+	}
+}
+
+impl<T> IntoIterator for LinkedList<T> {
+	type Item = T;
+	type IntoIter = IntoIter<Self::Item>;
+
+	fn into_iter(self) -> Self::IntoIter {
+		IntoIter { current: self.head }
+	}
+}
+
+impl<'a, T> IntoIterator for &'a LinkedList<T> {
+	type Item = &'a T;
+	type IntoIter = Iter<'a, T>;
+
+	fn into_iter(self) -> Self::IntoIter {
+		self.iter()
 	}
 }
